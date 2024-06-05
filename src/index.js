@@ -97,18 +97,18 @@ app.get('/backup', ensureAuthenticated, (req, res) => {
 
 // Redirect to the appropriate page after successful login
 app.get('/', ensureAuthenticated, (req, res) => {
-    if (req.user.role === 'senior_manager' || req.user.role === 'manager') {
-        console.log(req.user.role);
-        res.redirect('/backup');
-    } 
-    if (req.user.role === 'contractor' || req.user.role === 'developer') {
-        console.log(req.user.role);
-        res.redirect('/restore');
+//     if (req.user.role === 'senior_manager' || req.user.role === 'manager') {
+//         console.log(req.user.role);
+//         res.redirect('/backup');
+//     } 
+//     if (req.user.role === 'contractor' || req.user.role === 'developer') {
+//         console.log(req.user.role);
+//         res.redirect('/restore');
         
-    } else {
-        console.log(req.user.role);
-    }
-});
+//     } else {
+//         console.log(req.user.role);
+//     }
+// });
 
 // Start the server
 app.listen(port, () => {
