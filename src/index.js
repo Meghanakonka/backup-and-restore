@@ -1,16 +1,19 @@
 const express = require('express');
-const path = require('path');
 const mysql = require('mysql');
 const dotenv = require('dotenv');
-const passport = require('passport');
-const session = require('express-session');
-const flash = require('express-flash');
-const LocalStrategy = require('passport-local').Strategy;
+const { exec } = require('child_process');
+const multer = require('multer');
+const path = require('path');
+const bodyParser = require('body-parser');
 
+// Load environment variables from .env file
 dotenv.config();
 
 const app = express();
 const port = 3000;
+
+// Set up body parser to handle POST requests
+app.use(bodyParser.urlencoded({ extended: true }));
 
 const db = mysql.createConnection({
     host: process.env.DB_HOST,
@@ -19,98 +22,70 @@ const db = mysql.createConnection({
     database: process.env.DB_NAME
 });
 
-// Initialize session and flash
-app.use(session({
-    secret: 'secret',
-    resave: false,
-    saveUninitialized: false
-}));
-app.use(flash());
-
-// Initialize Passport middleware
-app.use(passport.initialize());
-app.use(passport.session());
-
-// Define local strategy for Passport
-passport.use(new LocalStrategy(
-    function(username, password, done) {
-        db.query('SELECT * FROM employees WHERE username = ?', [username], (err, results) => {
-            if (err) {
-                return done(err);
-            }
-            if (!results.length) {
-                return done(null, false, { message: 'Incorrect username.' });
-            }
-            const user = results[0];
-            if (user.password !== password) {
-                return done(null, false, { message: 'Incorrect password.' });
-            }
-            return done(null, user);
-        });
+db.connect(err => {
+    if (err) {
+        console.error('Database connection failed: ' + err.stack);
+        return;
     }
-));
-
-// Serialize and deserialize user
-passport.serializeUser((user, done) => {
-    done(null, user.id);
+    console.log('Connected to database');
 });
 
-passport.deserializeUser((id, done) => {
-    db.query('SELECT * FROM employees WHERE id = ?', [id], (err, results) => {
-        if (err) {
-            return done(err);
-        }
-        const user = results[0];
-        done(null, user);
-    });
-});
+// Define the password
+const PASSWORD = '1234';
 
-// Middleware to ensure user is authenticated
-const ensureAuthenticated = (req, res, next) => {
-    if (req.isAuthenticated()) {
-        return next();
-    }
-    res.redirect('/login');
-};
-
-// Handle login POST request
-app.post('/login', passport.authenticate('local', {
-    successRedirect: '/backup',
-    failureRedirect: '/restore',
-    failureFlash: true
-}));
-
-// Serve the login form
-app.get('/login', (req, res) => {
-    res.sendFile(path.join(__dirname, 'login.html'));
+app.get('/', (req, res) => {
+    res.send('Book Management API');
 });
 
 // Serve the restore form
-app.get('/restore', ensureAuthenticated, (req, res) => {
+app.get('/restore', (req, res) => {
     res.sendFile(path.join(__dirname, 'restore.html'));
 });
 
 // Serve the backup form
-app.get('/backup', ensureAuthenticated, (req, res) => {
+app.get('/backup', (req, res) => {
     res.sendFile(path.join(__dirname, 'backup.html'));
 });
 
-// Redirect to the appropriate page after successful login
-app.get('/', ensureAuthenticated, (req, res) => {
-//     if (req.user.role === 'senior_manager' || req.user.role === 'manager') {
-//         console.log(req.user.role);
-//         res.redirect('/backup');
-//     } 
-//     if (req.user.role === 'contractor' || req.user.role === 'developer') {
-//         console.log(req.user.role);
-//         res.redirect('/restore');
-        
-//     } else {
-//         console.log(req.user.role);
-//     }
-// });
+// Set up Multer for file uploads
+const upload = multer({ dest: 'uploads/' });
 
-// Start the server
+app.post('/restore', upload.single('backupFile'), (req, res) => {
+    const { password } = req.body;
+    if (password !== PASSWORD) {
+        return res.status(401).send('Unauthorized: Incorrect password');
+    }
+
+    const backupFile = req.file.path;
+    const command = `mysql -u${process.env.DB_USER} -p${process.env.DB_PASSWORD} ${process.env.DB_NAME} < ${backupFile}`;
+
+    exec(command, (error, stdout, stderr) => {
+        if (error) {
+            console.error(`Error restoring backup: ${stderr}`);
+            return res.status(500).send('Error restoring backup');
+        }
+        res.send('Backup restored successfully');
+    });
+});
+
+app.post('/backup', (req, res) => {
+    const { password } = req.body;
+    if (password !== PASSWORD) {
+        return res.status(401).send('Unauthorized: Incorrect password');
+    }
+
+    const backupFile = path.join(__dirname, 'backups', `${Date.now()}.sql`);
+    const command = `mysqldump -u${process.env.DB_USER} -p${process.env.DB_PASSWORD} ${process.env.DB_NAME} > ${backupFile}`;
+
+    exec(command, (error, stdout, stderr) => {
+        if (error) {
+            console.error(`Error creating backup: ${stderr}`);
+            return res.status(500).send('Error creating backup');
+        }
+        res.send('Backup created successfully');
+    });
+});
+
 app.listen(port, () => {
     console.log(`Server running on http://localhost:${port}`);
 });
