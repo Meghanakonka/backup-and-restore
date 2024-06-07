@@ -4,17 +4,65 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Restore Database</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f9;
+            color: #333;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+        .container {
+            background-color: #fff;
+            padding: 20px 40px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+        h1 {
+            color: #4CAF50;
+            text-align: center;
+        }
+        label {
+            display: block;
+            margin: 10px 0 5px;
+            font-weight: bold;
+        }
+        input[type="password"],
+        input[type="file"] {
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 15px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+        button {
+            width: 100%;
+            padding: 10px;
+            background-color: #4CAF50;
+            border: none;
+            border-radius: 4px;
+            color: #fff;
+            font-size: 16px;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+    </style>
 </head>
 <body>
-    <h1>Restore Database</h1>
-    <form action="/restore" method="post" enctype="multipart/form-data">
-        <label for="password">Password:</label>
-        <input type="password" name="password" required>
-        <br>
-        <label for="backupFile">Backup File:</label>
-        <input type="file" name="backupFile" required>
-        <br>
-        <button type="submit">Restore</button>
-    </form>
+    <div class="container">
+        <h1>Restore Database</h1>
+        <form action="/restore" method="post" enctype="multipart/form-data">
+            <label for="password">Password:</label>
+            <input type="password" name="password" required>
+            <label for="backupFile">Backup File:</label>
+            <input type="file" name="backupFile" required>
+            <button type="submit">Restore</button>
+        </form>
+    </div>
 </body>
 </html>
